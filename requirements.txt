@@ -1,0 +1,10 @@
+# 必需
+requests==2.32.5
+
+# 输出 Excel（不装则自动跳过 xlsx，html/json/md 仍可用）
+openpyxl==3.1.5
+
+# 仅在 --scholar-backend selenium 时需要
+# Selenium 4 自带 Selenium Manager，会自动下载匹配的 chromedriver，
+# 不需要像原项目那样手动下载再填路径
+selenium==4.49.0

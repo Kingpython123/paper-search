@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Runtime artifacts: search results and local cache are not source
+output/
+*.sqlite3
+*.sqlite3-journal
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Reference repo cloned for research, has its own .git, not part of this project
+cyd-selected-journal/
