@@ -74,7 +74,13 @@ class OpenAlexBudgetExhausted(OpenAlexError):
 #   list（filter=openalex:.. / issn:..）$0.0001 -> 每天约 1000 次
 #   singleton（/works/W123）免费
 # 所以能用 list 就别用 search，这是省额度的关键。
-_BUDGET_MARKERS = ("insufficient budget", "rate limit exceeded")
+#
+# 注意：只留 "insufficient budget" 作为硬额度判据。OpenAlex 后来给匿名
+# search 加了一层独立的瞬时限流，响应体文案恰好也是
+# "Rate limit exceeded"（Retry-After 只有几十秒），如果把它也当成硬额度
+# 标记，会把本该退避重试几十秒的限流误判成"今天彻底用不了了"。
+# 瞬时限流交给下面 retry_after > 300 秒这条判据去区分。
+_BUDGET_MARKERS = ("insufficient budget",)
 
 
 class OpenAlexClient:
@@ -131,7 +137,14 @@ class OpenAlexClient:
             if resp.status_code in (429, 403):
                 self._raise_if_budget(resp)
             if resp.status_code in (429, 500, 502, 503, 504):
+                # 429 时优先信服务端给的 Retry-After（瞬时限流常见几十秒），
+                # 没有的话才退回指数退避
                 wait = min(2 ** attempt, 16)
+                if resp.status_code == 429:
+                    try:
+                        wait = max(wait, int(resp.headers.get("Retry-After", "0")))
+                    except ValueError:
+                        pass
                 self.on_progress(
                     f"OpenAlex 返回 {resp.status_code}，{wait}s 后重试"
                     f"（{attempt + 1}/{self.max_retries}）")

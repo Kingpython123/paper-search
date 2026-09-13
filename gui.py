@@ -32,21 +32,29 @@ from tkinter import filedialog, messagebox, ttk
 from journal_picker import __version__
 from journal_picker.cache import Cache
 from journal_picker.models import SearchQuery
-from journal_picker.pipeline import Pipeline, SORT_KEYS
+from journal_picker.pipeline import Pipeline
 from journal_picker.report import write_all
 
 APP_TITLE = f"期刊选择助手 v{__version__} —— 按研究方向反查候选投稿期刊"
 
 SCOPE_LABELS = {
-    "仅标题（最精准，推荐）": "title",
+    "仅标题": "title",
     "标题 + 摘要": "abstract",
-    "全文（结果多但噪声大）": "fulltext",
+    "全文": "fulltext",
 }
-SORT_LABELS = {v: k for k, v in SORT_KEYS.items()}
+# GUI 下拉框用短标签，完整说明留给 README 和 CLI --help（SORT_KEYS 里那份）
+SORT_LABELS = {
+    "命中论文数": "papers",
+    "影响力": "impact",
+    "分区优先": "quartile",
+    "总被引": "citations",
+    "CCF 等级优先": "ccf",
+    "刊名字典序": "name",
+}
 BACKEND_LABELS = {
-    "直连（能上 Google 就用这个）": "http",
-    "SerpApi（需 API key，最稳）": "serpapi",
-    "浏览器（可手动过验证码）": "selenium",
+    "直连": "http",
+    "SerpApi": "serpapi",
+    "浏览器": "selenium",
 }
 
 
@@ -138,15 +146,15 @@ class App:
         self.v_journal = tk.BooleanVar(value=True)
         self.v_conf = tk.BooleanVar(value=True)
 
-        ttk.Checkbutton(src, text="OpenAlex（主力，免费无需配置）",
+        ttk.Checkbutton(src, text="OpenAlex",
                         variable=self.v_openalex).grid(row=0, column=0, sticky="w", **pad)
         ttk.Checkbutton(src, text="Google 学术", variable=self.v_scholar,
                         command=self._toggle_scholar).grid(row=0, column=1, sticky="w", **pad)
         ttk.Checkbutton(src, text="Crossref 兜底补载体",
                         variable=self.v_crossref).grid(row=0, column=2, sticky="w", **pad)
-        ttk.Checkbutton(src, text="letpub 补分区/IF/审稿周期（默认开，慢）",
+        ttk.Checkbutton(src, text="letpub 补分区/IF/审稿周期",
                         variable=self.v_letpub).grid(row=0, column=3, sticky="w", **pad)
-        ttk.Checkbutton(src, text="CCF 目录匹配（本地，不联网，默认开）",
+        ttk.Checkbutton(src, text="CCF 目录匹配",
                         variable=self.v_ccf).grid(row=0, column=4, sticky="w", **pad)
 
         ttk.Label(src, text="Google 学术后端").grid(row=1, column=0, sticky="w", **pad)
@@ -164,7 +172,7 @@ class App:
         ttk.Checkbutton(tf, text="期刊", variable=self.v_journal).pack(side="left")
         ttk.Checkbutton(tf, text="会议", variable=self.v_conf).pack(side="left", padx=(8, 0))
 
-        ttk.Label(src, text="邮箱（选填）").grid(row=2, column=2, sticky="e", **pad)
+        ttk.Label(src, text="邮箱").grid(row=2, column=2, sticky="e", **pad)
         self.e_mail = ttk.Entry(src)
         self.e_mail.grid(row=2, column=3, sticky="ew", **pad)
 
@@ -179,7 +187,7 @@ class App:
                    width=8).grid(row=0, column=1, padx=(6, 0))
 
         # ---------- 结果表 ----------
-        mid = ttk.LabelFrame(root, text="候选期刊（双击一行打开期刊主页）")
+        mid = ttk.LabelFrame(root, text="候选期刊 · 双击一行打开期刊主页")
         mid.grid(row=2, column=0, sticky="nsew", padx=10, pady=4)
         mid.columnconfigure(0, weight=1)
         mid.rowconfigure(0, weight=1)
@@ -349,7 +357,7 @@ class App:
     def _stop(self) -> None:
         self.stop_flag.set()
         self.lbl_status.configure(text="正在停止…")
-        self._log("收到停止指令，正在收尾（已抓到的结果仍会输出）")
+        self._log("收到停止指令，正在收尾，已抓到的结果仍会输出")
 
     # -------------------------------------------------- 工作线程（不碰任何控件）
 
