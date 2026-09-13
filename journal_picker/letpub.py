@@ -75,7 +75,7 @@ def _text(html: str) -> str:
 class LetpubClient:
     """letpub 检索客户端（best-effort）。"""
 
-    def __init__(self, cache: Cache | None = None, min_interval: float = 2.0,
+    def __init__(self, cache: Cache | None = None, min_interval: float = 8.0,
                  max_retries: int = 4, timeout: int = 25,
                  on_progress: ProgressFn | None = None) -> None:
         self.cache = cache
@@ -158,7 +158,7 @@ class LetpubClient:
             if _RESULT_TABLE_MARK not in body:
                 # 典型限流响应：HTTP 200 但只有几百字节的空壳
                 self.blocked_count += 1
-                wait = min(5 * 2 ** attempt, 30)
+                wait = min(10 * 2 ** attempt, 60)
                 self.on_progress(
                     f"letpub 疑似限流（响应仅 {len(body)} 字节），等待 {wait}s 后重试")
                 time.sleep(wait)
