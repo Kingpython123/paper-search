@@ -91,15 +91,21 @@ def _stamp() -> str:
 def write_all(result: PipelineResult, outdir: str | Path,
               basename: str | None = None,
               formats: list[str] | None = None) -> list[Path]:
-    """按需输出多种格式，返回实际生成的文件列表。"""
+    """按需输出多种格式，返回实际生成的文件列表。
+
+    每次运行的结果单独放一个子文件夹（outdir/<basename>/），
+    而不是把所有格式散在 outdir 根目录下 —— 跑得多了根目录会堆满文件，
+    分文件夹之后一次运行的产出天然聚在一起，删/挪也方便。
+    """
     outdir = Path(outdir)
-    outdir.mkdir(parents=True, exist_ok=True)
     basename = basename or f"journals_{_stamp()}"
+    run_dir = outdir / basename
+    run_dir.mkdir(parents=True, exist_ok=True)
     formats = formats or ["xlsx", "html", "json", "md"]
 
     written: list[Path] = []
     for fmt in formats:
-        path = outdir / f"{basename}.{fmt}"
+        path = run_dir / f"{basename}.{fmt}"
         if fmt == "xlsx":
             if write_xlsx(result, path):
                 written.append(path)
